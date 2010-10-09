@@ -10,11 +10,11 @@ public class OntologyHandler extends OntologyTree {
 		
 	}
 	
-	public void Initialize(){
+	public void Initialize(String root){
 		try{
 			stat.executeUpdate("create table Ontology (ID INTEGER PRIMARY KEY AUTOINCREMENT, Title VARCHAR(500) UNIQUE)");
 			stat.executeUpdate("create table Relationships (Parent VARCHAR(500), Child VARCHAR(500), PRIMARY KEY (Parent, Child))");
-			stat.execute("INSERT INTO Ontology(title) VALUES ('Professor')");
+			stat.execute("INSERT INTO Ontology(title) VALUES ('" + root + "')");
 			System.out.println("Created tables: Ontology, Relationships. Database is ready!");
 		}catch(Exception e){
 			System.out.println("Database & tables already exist");
@@ -48,21 +48,21 @@ public class OntologyHandler extends OntologyTree {
 		/*
 		 * Returns the best path-match in the tree containing keywords
 		 * @param keywords - array of keywords to be matched
-		 * @return best_path - string representing path in tree with most matches to keywords
+		 * @return paths - paths that match the keywords
 		 */
 		
 		String path = "";
-		String[][] top = new String[keywords.length][keywords.length+1]; // rank, path
+		String[][] paths = new String[keywords.length][keywords.length+1]; // rank, path
 		int cnt = 0;
 		for (int i = 0; i < keywords.length; i++){
 			
 			// for each keyword, find a path in the tree through it
 			path = PathToNode(keywords[i], "");
-			top[cnt][0] = Integer.toString(RankPath(keywords, path));
-			top[cnt][1] = path;
+			paths[cnt][0] = Integer.toString(RankPath(keywords, path));
+			paths[cnt][1] = path;
 			cnt++;
 		}
-		return top;
+		return paths;
 	}
 	
 	public String[] BestMatch(String[][] paths, int max){

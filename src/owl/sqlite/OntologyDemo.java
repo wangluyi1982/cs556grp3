@@ -5,7 +5,7 @@ public class OntologyDemo {
 	
 	public static void main(String[] args) throws Exception{
 		OntologyHandler ont = new OntologyHandler("res/ontology.db");
-		ont.Initialize();
+		ont.Initialize("Professor");
 		ont.AddNode("Teaching", "Professor");
 		ont.AddNode("Research", "Professor");
 		ont.AddNode("Proposals", "Research");
