@@ -29,10 +29,7 @@ public class OntologyDemo {
 		String[] best = ont.BestMatch(paths, 1);
 		ont.PrintArray(best);
 		
-		System.out.println("\nTree:");
-		ont.ShowRelationships();
-		
-		ont.SaveOWL();
+		ont.SaveOWL("ontology.owl");
 		ont.Close();
 	}
 }

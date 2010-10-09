@@ -1,5 +1,4 @@
 package owl.sqlite;
-import java.io.File;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -26,6 +25,12 @@ public class OntologyHandler extends OntologyTree {
 		
 	}
 	
+	/**
+	 * Initializes the database to be used as an Ontology tree by creating 2 
+	 * tables - Ontology and Relationships, and also adds the root node to the Ontology table
+	 * @param root
+	 * @return void
+	 */
 	public void Initialize(String root){
 		try{
 			stat.executeUpdate("create table Ontology (ID INTEGER PRIMARY KEY AUTOINCREMENT, Title VARCHAR(500) UNIQUE)");
@@ -37,31 +42,14 @@ public class OntologyHandler extends OntologyTree {
 		}		
 	}
 	
-	public void ConvertToOwl(){
-		/*
-		 * Converts the contents of the database to an OWL file
-		 */
-	}
-	
-	public void ShowRelationships() throws SQLException{
-		ResultSet rs = stat.executeQuery("SELECT * FROM Relationships");
-		String parent, child;
-		System.out.println("\nRelationships");
-		while (rs.next()){
-			parent = getSingleValue("SELECT title FROM ontology WHERE id = " + rs.getString("parent"), "title");
-			child = getSingleValue("SELECT title FROM ontology WHERE id = " + rs.getString("child"), "title");
-			System.out.println(child + " is a subclass of " + parent);
-		}
-	}
-	
+	/**
+	 * Gives a count of how many words in keywords were matched in a single path 
+	 * @param keywords - words to be matched
+	 * @param path - String representing path in the tree to be searched for keywords
+	 * @return count - number keywords found in path
+	 */
 	private int RankPath(String[] keywords, String path){
-		/*
-		 * Gives a count of how many words in keywords were matched in path		 * 
-		 * @param keywords - words to be matched
-		 * @param path - string to be searched for keywords
-		 * @return count - number of matches found
-		 * hello world
-		 */
+
 		int count = 0;
 		for (int i = 0; i < keywords.length; i++){
 			if (path.lastIndexOf((keywords[i])) > 0){
@@ -71,12 +59,13 @@ public class OntologyHandler extends OntologyTree {
 		return count;
 	}
 	
+	
+	/**
+	 * Returns paths in the tree that match a given set of keywords
+	 * @param keywords - array of keywords to be matched
+	 * @return String[] paths - array of paths that matched the keywords
+	 */
 	public String[][] SimilarityMatch(String[] keywords){
-		/*
-		 * Returns the best path-match in the tree containing keywords
-		 * @param keywords - array of keywords to be matched
-		 * @return paths - paths that match the keywords
-		 */
 		
 		String path = "";
 		String[][] paths = new String[keywords.length][keywords.length+1]; // rank, path
@@ -92,21 +81,22 @@ public class OntologyHandler extends OntologyTree {
 		return paths;
 	}
 	
-	public String[] BestMatch(String[][] paths, int max){
-		/*
-		 * Returns the top 'max' matching paths
-		 * @param paths - ranked paths. path[x][0] = rank, path[x][1] = path
-		 * @param max - number of top paths to return
-		 * @return - 1d array of top 'max' paths
-		 */
-		if (max > paths.length){
+	/**
+	 * Returns the top n matching paths
+	 * @param paths 2D String array representing paths in the tree and their ranks when matched 
+	 * to some keywords (paths[x][0] = rank, paths[x][1] = path)
+	 * @param n  number of highest ranked paths to return
+	 * @return 1d array of top 'n' paths
+	 */
+	public String[] BestMatch(String[][] paths, int n){
+		if (n > paths.length){
 			// max can't be greater than the number of paths
-			max = paths.length;
+			n = paths.length;
 		}
-		String[] best = new String[max];		
+		String[] best = new String[n];		
 		Arrays.sort(paths, new RankComparator());
 		
-		for (int i = 0; i < max; i++){
+		for (int i = 0; i < n; i++){
 			best[i] = paths[i][1];
 		}
 		return best;
@@ -134,51 +124,45 @@ public class OntologyHandler extends OntologyTree {
 		}
 	}
 	
-	public void SaveOWL() throws SQLException{
+	/**
+	 * For detailed explanation of what this function does, see:
+	 * http://owlapi.sourceforge.net/documentation.html -> Adding Axioms
+	 * To summarize, this function generates the OWL file using the data stored
+	 * in the Relationships table
+	 * 
+	 * @param filename file to save to (.owl)
+	 * @return void
+	 */
+	public void SaveOWL(String filename) throws SQLException{
+
 	        try {
 	            // Create the manager that we will use to load ontologies.
 	            OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
 
-	            // Ontologies cna have an IRI, which is used to identify the ontology.  You should
-	            // think of the ontology IRI as the "name" of the ontology.  This IRI frequently
-	            // resembles a Web address (i.e. http://...), but it is important to realise that
-	            // the ontology IRI might not necessarily be resolvable.  In other words, we
-	            // can't necessarily get a document from the URL corresponding to the ontology
-	            // IRI, which represents the ontology.
-	            // In order to have a concrete representation of an ontology (e.g. an RDF/XML
-	            // file), we MAP the ontology IRI to a PHYSICAL URI.  We do this using an IRIMapper
-
-	            // Let's create an ontology and name it "http://www.co-ode.org/ontologies/testont.owl"
-	            // We need to set up a mapping which points to a concrete file where the ontology will
-	            // be stored. (It's good practice to do this even if we don't intend to save the ontology).
+	            // Specify IRI used to identify the ontology
 	            IRI ontologyIRI = IRI.create("http://code.google.com/p/cs556grp3/ontology.owl");
+	            
 	            // Create the document IRI for our ontology
 	            String loc = System.getProperty("user.dir");
-	            String path = "file:/" + loc.replace("\\", "/").substring(3) + "/res/ontology.owl";
+	            String path = "file:/" + loc.replace("\\", "/").substring(3) + "/res/" + filename;
+	            
 	            IRI documentIRI = IRI.create(path);
+	            
 	            // Set up a mapping, which maps the ontology to the document IRI
 	            SimpleIRIMapper mapper = new SimpleIRIMapper(ontologyIRI, documentIRI);
 	            manager.addIRIMapper(mapper);
 
 	            // Now create the ontology - we use the ontology IRI (not the physical URI)
 	            OWLOntology ontology = manager.createOntology(ontologyIRI);
-	            // Now we want to specify that A is a subclass of B.  To do this, we add a subclass
-	            // axiom.  A subclass axiom is simply an object that specifies that one class is a
-	            // subclass of another class.
-	            // We need a data factory to create various object from.  Each manager has a reference
-	            // to a data factory that we can use.
+	            
 	            OWLDataFactory factory = manager.getOWLDataFactory();
-	            // Get hold of references to class A and class B.  Note that the ontology does not
-	            // contain class A or classB, we simply get references to objects from a data factory that represent
-	            // class A and class B
 	            
-	            
-	            //This will be modified so A and B will be a parent and a child
-	            
+	            // Fetch the data in the Relationships table
 	            ResultSet rs = stat.executeQuery("SELECT * FROM Relationships");
 	    		String parent, child;
-	    		System.out.println("\nCreating OWL file (" + path + ")...");
 	    		OWLClass clsA = null, clsB;
+	    		
+	    		// for each relationship, create a B is a subclass of A relationship
 	    		while (rs.next()){
 	    			parent = getSingleValue("SELECT title FROM ontology WHERE id = " + rs.getString("parent"), "title");
 	    			child = getSingleValue("SELECT title FROM ontology WHERE id = " + rs.getString("child"), "title");
@@ -186,21 +170,15 @@ public class OntologyHandler extends OntologyTree {
 	    			clsA = factory.getOWLClass(IRI.create(ontologyIRI + "#" + child));
 	    			clsB = factory.getOWLClass(IRI.create(ontologyIRI + "#" + parent));
 	    			
-	    		
-		            //OWLClass clsA = factory.getOWLClass(IRI.create(ontologyIRI + "#A"));
-		            //OWLClass clsB = factory.getOWLClass(IRI.create(ontologyIRI + "#B"));
 		            // Now create the axiom
 		            OWLAxiom axiom = factory.getOWLSubClassOfAxiom(clsA, clsB);
-		            // We now add the axiom to the ontology, so that the ontology states that
-		            // A is a subclass of B.  To do this we create an AddAxiom change object.
-		            // At this stage neither classes A or B, or the axiom are contained in the ontology. We have to
-		            // add the axiom to the ontology.
+
+		            // Add the Axiom to the Ontology
 		            AddAxiom addAxiom = new AddAxiom(ontology, axiom);
 		   
-		            // We now use the manager to apply the change
+		            // Use the manager to apply changes
 		            manager.applyChange(addAxiom);
 	    		
-
 		            // We should also find that B is an ASSERTED superclass of A
 		            Set<OWLClassExpression> superClasses = clsA.getSuperClasses(ontology);
 		            System.out.println("Asserted superclasses of " + clsA + ":");
@@ -208,22 +186,18 @@ public class OntologyHandler extends OntologyTree {
 		                System.out.println(desc);
 		            }
 	    		}
-	    		// The ontology will now contain references to class A and class B - that is, class A and class B
-	            // are contained within the SIGNATURE of the ontology let's print them out
+	    		
+	    		// The ontology will now contain references to class A and class B 
 	            for (OWLClass cls : ontology.getClassesInSignature()) {
 	                System.out.println("Referenced class: " + cls);
 	            }
 
-	            // Now save the ontology.  The ontology will be saved to the location where
-	            // we loaded it from, in the default ontology format
+	            // Now save the ontology (overwrite if file already exists). 
 	            manager.saveOntology(ontology);
 
 	        }
 	        catch (OWLException e) {
 	            e.printStackTrace();
 	        }
-	}
-	
-	
-	
+	}	
 }
