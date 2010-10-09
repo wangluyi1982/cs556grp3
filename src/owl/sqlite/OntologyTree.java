@@ -12,18 +12,6 @@ public class OntologyTree {
 		conn.setAutoCommit(true);
 	}
 	
-	public void Initialize(){
-		try{
-			stat.executeUpdate("create table Ontology (ID INTEGER PRIMARY KEY AUTOINCREMENT, Title VARCHAR(500) UNIQUE)");
-			stat.executeUpdate("create table Relationships (Parent VARCHAR(500), Child VARCHAR(500), PRIMARY KEY (Parent, Child))");
-			stat.execute("INSERT INTO Ontology(title) VALUES ('Professor')");
-			System.out.println("Created tables: Ontology, Relationships. Database is ready!");
-		}catch(Exception e){
-			System.out.println("Database & tables already exist");
-		}
-		
-	}
-	
 	public int AddNode(String node, String parent) throws SQLException{
 		/*
 		 * Adds a new node to the database
@@ -139,12 +127,6 @@ public class OntologyTree {
 		 * Displays the Ontology Tree
 		 */
 		return null;
-	}
-	
-	public void ConvertToOwl(){
-		/*
-		 * Converts the contents of the database to an OWL file
-		 */
 	}
 	
 	public void Close() throws SQLException{
