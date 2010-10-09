@@ -12,6 +12,14 @@ public class OntologyTree {
 		conn.setAutoCommit(true);
 	}
 	
+	/**
+	 * Adds a new node to the database
+	 * @param node - title of the node to be added
+	 * @param parent - title of the node's parent
+	 * @return cid - ID of node in the Ontology table after it's been added to the database
+	 * , or -1 if failed to add node
+	 * @throws SQLException
+	 */
 	public int AddNode(String node, String parent) throws SQLException{
 		/*
 		 * Adds a new node to the database
@@ -53,6 +61,12 @@ public class OntologyTree {
 		return cid;
 	}
 	
+	/**
+	 * Returns a single value from the query to the database
+	 * @param query - a sql statement to fetch something from the database
+	 * @param want - desired attribute from the query
+	 * @return res - result from the query
+	 */
 	protected String getSingleValue(String query, String want){
 		/*
 		 * Wrapper function that returns a single value from the database
@@ -74,12 +88,14 @@ public class OntologyTree {
 		}
 	}
 	
+	
+	/**
+	 * Removes a node from both the Ontology and Relationships table
+	 * @param node - title of node to be removed from the Ontology
+	 * @return void
+	 */
 	public void RemoveNode(String node){
-		/*
-		 * Removes a node from the Ontology and Relationships table
-		 * @param node - title of node to be removed from the Ontology
-		 * @return void
-		 */
+
 		try{
 			stat.execute("DELETE FROM Ontology WHERE title = '" + node + "'");
 			stat.execute("DELETE FROM Relationships WHERE parent = '" + node + "' OR child = '" + node + "'");
@@ -88,12 +104,14 @@ public class OntologyTree {
 		}
 	}
 	
+	
+	/**
+	 * Returns a single path to a given node in the Ontology tree
+	 * @param node - node whose path is to be returned
+	 * @return path - String representing path to node
+	 */
 	public String PathToNode(String node, String path){
-		/*
-		 * Returns a path to a given node
-		 * @param node - node whose path is to be returned
-		 * @return String[] - string array as path to node
-		 */
+
 		if (node != null){
 			path = path + " < " + node;
 			path = PathToNode(getSingleValue("SELECT title FROM Ontology WHERE id = (SELECT Parent FROM Relationships WHERE Child = (SELECT id FROM Ontology WHERE title = '" + node + "'))", "title"), path);
@@ -101,39 +119,38 @@ public class OntologyTree {
 		return path;
 	}
 	
+	
+	/**
+	 * Returns the children of a node
+	 * @param node - node whose children is to be returned
+	 * @return children - String representing node's children
+	 */
 	public String NodeChildren(String node){
-		/*
-		 * Returns the children of a node
-		 * @param node - node whose children is to be returned
-		 * @return node - string of node's children
-		 */
-		String res = "";
+
+		String children = "";
 		try{
 			ResultSet rs = stat.executeQuery("SELECT title FROM Ontology WHERE id in (SELECT child FROM Relationships WHERE Parent = (SELECT id FROM Ontology WHERE title = '" + node + "'))");
 			while(rs.next()){
-				res = res + " < " + rs.getString("title");
+				children = children + " < " + rs.getString("title");
 			}
 		}catch(Exception e){
 			return null;
 		}
 		
-		return res;
+		return children;
 	}
 	
+	/**
+	 * Returns a String comprised of a node's parents and children 
+	 */
 	public String PathThrough(String node){
-		/*
-		 * Returns a list made up a node's parent nodes and children 
-		 */
 		return this.NodeChildren(node) + this.PathToNode(node, "");
 	}
 	
-	public String TraverseTree(){
-		/*
-		 * Displays the Ontology Tree
-		 */
-		return null;
-	}
-	
+	/**
+	 * Closes the database connection
+	 * @throws SQLException
+	 */
 	public void Close() throws SQLException{
 		/*
 		 * Closes the database connection

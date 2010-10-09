@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<catalog id="XML Catalog File (see http://www.oasis-open.org/committees/entity/spec-2001-08-06.html) - Created By Protege 4" prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+    <group id="Folder Repository, directory=C:\Users\will\workspace\cs556grp3\res, recursive=true, Auto-Update=true" prefer="public" xml:base="">
+        <uri id="Automatically generated entry, Timestamp=1286655500015" name="http://code.google.com/p/cs556grp3/downloads/detail?name=professor.owl" uri="professor.owl"/>
+        <uri id="Automatically generated entry, Timestamp=1286655500015" name="http://code.google.com/p/cs556grp3/ontology.owl" uri="ontology.owl"/>
+    </group>
+</catalog>
