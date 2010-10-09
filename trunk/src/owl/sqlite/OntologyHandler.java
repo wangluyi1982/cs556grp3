@@ -52,13 +52,12 @@ public class OntologyHandler extends OntologyTree {
 		 */
 		
 		String path = "";
-		String[][] top = new String[keywords.length][keywords.length]; // rank, path
+		String[][] top = new String[keywords.length][keywords.length+1]; // rank, path
 		int cnt = 0;
 		for (int i = 0; i < keywords.length; i++){
 			
 			// for each keyword, find a path in the tree through it
 			path = PathToNode(keywords[i], "");
-			
 			top[cnt][0] = Integer.toString(RankPath(keywords, path));
 			top[cnt][1] = path;
 			cnt++;
