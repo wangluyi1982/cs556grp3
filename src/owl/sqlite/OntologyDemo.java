@@ -1,6 +1,5 @@
 package owl.sqlite;
 
-
 public class OntologyDemo {
 	
 	public static void main(String[] args) throws Exception{
@@ -29,6 +28,11 @@ public class OntologyDemo {
 		System.out.println("\nBest Path: ");
 		String[] best = ont.BestMatch(paths, 1);
 		ont.PrintArray(best);
+		
+		System.out.println("\nTree:");
+		ont.ShowRelationships();
+		
+		ont.SaveOWL();
 		ont.Close();
 	}
 }

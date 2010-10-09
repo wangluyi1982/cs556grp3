@@ -53,20 +53,25 @@ public class OntologyTree {
 		return cid;
 	}
 	
-	private String getSingleValue(String query, String want){
+	protected String getSingleValue(String query, String want){
 		/*
 		 * Wrapper function that returns a single value from the database
 		 */
-		String res = null;
 		try{
-			ResultSet rs = stat.executeQuery(query);
-			while (rs.next()){
-				res = rs.getString(want);
+			Statement tmp = conn.createStatement();
+			String res = null;
+			try{
+				ResultSet rs = tmp.executeQuery(query);
+				while (rs.next()){
+					res = rs.getString(want);
+				}
+			}catch(Exception e){
+				System.out.println(e.toString());	
 			}
+			return res;
 		}catch(Exception e){
-			System.out.println(e.toString());	
+			return null;
 		}
-		return res;
 	}
 	
 	public void RemoveNode(String node){
