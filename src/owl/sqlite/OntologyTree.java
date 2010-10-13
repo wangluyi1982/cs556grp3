@@ -1,6 +1,7 @@
 package owl.sqlite;
 
 import java.sql.*;
+import java.util.Stack;
 
 public class OntologyTree {
 	Connection conn;
@@ -119,6 +120,26 @@ public class OntologyTree {
 		return path;
 	}
 	
+	/**
+	 * Recursively traverses the Ontology tree
+	 * @param node current parent node whose children is to be traversed
+	 * @stack stack to hold our statements so the result sets don't get overwritten during recursion
+	 * @return void 
+	 */
+	public void Traverse(String node, Stack<Statement> stack) throws SQLException{
+		conn.setAutoCommit(false);
+		String str = "";
+		for (int i=0; i <= stack.size(); i++){
+			str = str + "  ";
+		}
+		stack.push(conn.createStatement());
+		ResultSet rs = stack.peek().executeQuery("SELECT title FROM Ontology WHERE id in (SELECT Child FROM Relationships WHERE Parent = (SELECT id FROM ontology WHERE title = '" + node + "'))");
+		while (rs.next()){
+			System.out.println(str + rs.getString("title"));
+			Traverse(rs.getString("title"), stack);
+		}
+		stack.pop();
+	}
 	
 	/**
 	 * Returns the children of a node
