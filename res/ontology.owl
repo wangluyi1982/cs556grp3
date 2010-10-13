@@ -43,6 +43,14 @@
     
 
 
+    <!-- http://code.google.com/p/cs556grp3/ontology.owl#School_Stuff -->
+
+    <owl:Class rdf:about="http://code.google.com/p/cs556grp3/ontology.owl#School_Stuff">
+        <rdfs:subClassOf rdf:resource="http://code.google.com/p/cs556grp3/ontology.owl#Teaching"/>
+    </owl:Class>
+    
+
+
     <!-- http://code.google.com/p/cs556grp3/ontology.owl#Syllabus -->
 
     <owl:Class rdf:about="http://code.google.com/p/cs556grp3/ontology.owl#Syllabus">
