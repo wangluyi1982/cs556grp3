@@ -121,12 +121,24 @@ public class OntologyTree {
 	}
 	
 	/**
-	 * Recursively traverses the Ontology tree
+	 * Initiates traversal of the tree by first determining the root node
+	 */
+	public void Traverse() throws SQLException{
+		Stack<Statement> stack = new Stack<Statement>();
+		String root = getSingleValue("SELECT title FROM Ontology WHERE id = 1", "title");
+		System.out.println(root);
+		TraverseChildren(root, stack);
+	}
+	
+	
+	/**
+	 * Recursively traverses the Ontology tree starting from the root node
 	 * @param node current parent node whose children is to be traversed
 	 * @stack stack to hold our statements so the result sets don't get overwritten during recursion
 	 * @return void 
+	 * @throws SQLException 
 	 */
-	public void Traverse(String node, Stack<Statement> stack) throws SQLException{
+	public void TraverseChildren(String node, Stack<Statement> stack) throws SQLException{
 		conn.setAutoCommit(false);
 		String str = "";
 		for (int i=0; i <= stack.size(); i++){
@@ -136,7 +148,7 @@ public class OntologyTree {
 		ResultSet rs = stack.peek().executeQuery("SELECT title FROM Ontology WHERE id in (SELECT Child FROM Relationships WHERE Parent = (SELECT id FROM ontology WHERE title = '" + node + "'))");
 		while (rs.next()){
 			System.out.println(str + rs.getString("title"));
-			Traverse(rs.getString("title"), stack);
+			TraverseChildren(rs.getString("title"), stack);
 		}
 		stack.pop();
 	}
