@@ -1,8 +1,5 @@
 package owl.sqlite;
 
-import java.sql.Statement;
-import java.util.Stack;
-
 public class OntologyDemo {
 	
 	public static void main(String[] args) throws Exception{
@@ -33,9 +30,9 @@ public class OntologyDemo {
 		String[] best = ont.BestMatch(paths, 1);
 		ont.PrintArray(best);
 		
-		System.out.println("\nProfessor");
-		Stack<Statement> stack = new Stack<Statement>();
-		ont.Traverse("Professor", stack);
+		System.out.println("\nTree:");
+	
+		ont.Traverse();
 		
 		ont.SaveOWL("ontology.owl");
 		ont.Close();
