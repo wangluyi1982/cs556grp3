@@ -6,11 +6,31 @@ import java.util.Stack;
 public class OntologyTree {
 	Connection conn;
 	Statement stat;
+	
 	public OntologyTree(String filename) throws Exception{
 		Class.forName("org.sqlite.JDBC");
 		conn = DriverManager.getConnection("jdbc:sqlite:" + filename);
 		stat = conn.createStatement();	
 		conn.setAutoCommit(true);
+	}
+	
+	/**
+	 * Converts the first character of each word in the given string to upper case
+	 * and replaces spaces with underscores
+	 * @param str - String of words
+	 * @return newword - String of words with first character of each word converted to upper case
+	 */
+	public String CapWords(String str){
+		String[] words = str.split(" ");
+		String tmp, newword = "";
+		for (int i = 0; i < words.length; i++){
+			tmp = words[i];
+			newword += tmp.substring(0,1).toUpperCase() + tmp.substring(1).toLowerCase();
+			if (i == (words.length - 2)){
+				newword += " ";
+			}
+		}
+		return newword.replace(" ", "_");
 	}
 	
 	/**
@@ -21,6 +41,7 @@ public class OntologyTree {
 	 * , or -1 if failed to add node
 	 * @throws SQLException
 	 */
+	
 	public int AddNode(String node, String parent) throws SQLException{
 		/*
 		 * Adds a new node to the database
@@ -30,33 +51,38 @@ public class OntologyTree {
 		 * @return -1 if node was not inserted
 		 */
 		
-		Integer cid = null;
+		Integer cid = -1;
+		node = CapWords(node);
+		parent = CapWords(parent);
 		
-		try{
-			stat.execute("INSERT INTO Ontology(title) VALUES ('" + node + "')");
-		}catch(Exception e){
-			System.out.println("Unable to add node. " + e.toString());
-			return -1;
-		}
+		if (node != parent){
 		
-		if (!parent.equals("null")){
-			// get parent id and child id
-			String res;
-			Integer pid = null;
+			try{
+				stat.execute("INSERT INTO Ontology(title) VALUES ('" + node + "')");
+			}catch(Exception e){
+				System.out.println("Unable to add node. " + e.toString());
+				return -1;
+			}
 			
-			res = getSingleValue("SELECT id FROM Ontology WHERE title = '" + parent + "'", "id");
-			if (res != null){
-				pid = Integer.parseInt(res);
-			}
-			res = getSingleValue("SELECT id FROM Ontology WHERE title = '" + node + "'", "id");
-			if (res != null){
-				cid = Integer.parseInt(res);
-			}
-			if (pid != null && cid != null){
-				stat.execute("INSERT INTO Relationships(parent, child) VALUES (" + pid + ", " + cid + ")");
-				System.out.println("Added '" + node + "' to Ontology");
-			}else{
-				System.out.println("Unable add '" + node + "'");
+			if (!parent.equals("null")){
+				// get parent id and child id
+				String res;
+				Integer pid = null;
+				
+				res = getSingleValue("SELECT id FROM Ontology WHERE title = '" + parent + "'", "id");
+				if (res != null){
+					pid = Integer.parseInt(res);
+				}
+				res = getSingleValue("SELECT id FROM Ontology WHERE title = '" + node + "'", "id");
+				if (res != null){
+					cid = Integer.parseInt(res);
+				}
+				if (pid != null && cid != null){
+					stat.execute("INSERT INTO Relationships(parent, child) VALUES (" + pid + ", " + cid + ")");
+					System.out.println("Added '" + node + "' to Ontology");
+				}else{
+					System.out.println("Unable add '" + node + "'");
+				}
 			}
 		}
 		return cid;
@@ -96,7 +122,7 @@ public class OntologyTree {
 	 * @return void
 	 */
 	public void RemoveNode(String node){
-
+		node = CapWords(node);
 		try{
 			stat.execute("DELETE FROM Ontology WHERE title = '" + node + "'");
 			stat.execute("DELETE FROM Relationships WHERE parent = '" + node + "' OR child = '" + node + "'");

@@ -1,9 +1,14 @@
 package owl.sqlite;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.AddAxiom;
@@ -24,7 +29,7 @@ public class OntologyHandler extends OntologyTree {
 		// TODO Auto-generated constructor stub
 		
 	}
-	
+
 	/**
 	 * Initializes the database to be used as an Ontology tree by creating 2 
 	 * tables - Ontology and Relationships, and also adds the root node to the Ontology table
@@ -200,4 +205,45 @@ public class OntologyHandler extends OntologyTree {
 	            e.printStackTrace();
 	        }
 	}	
+	
+	public String[] ExtractKeywords(String file){
+		String[] keywords = null;
+		try{
+			FileReader input = new FileReader(file);
+	        
+			BufferedReader bufRead = new BufferedReader(input);
+	        String line; 	// String that holds current file line
+	        String tmp;
+	        
+	        // Read first line
+	        line = bufRead.readLine();
+	        
+			// Read through file one line at time. Print line # and line
+	        Pattern pattern = Pattern.compile("\\<keywords\\>.*\\<\\/keywords\\>");
+	        
+	        // if a match is found, we'll replace all commas followed by spaces with just commas
+	        Pattern p = Pattern.compile(",\\s*");
+	       
+	        while (line != null){
+	        	Matcher matcher = pattern.matcher(line);
+	        	while(matcher.find()){
+	        		String match = matcher.group();
+	        		String m = p.matcher(match).replaceAll(",");		
+	        		keywords = m.substring(m.indexOf(">")+1, m.indexOf("</")).split(",");
+	        		
+	        		//fix case for keywords
+	        		for (int i = 0; i < keywords.length; i++){
+	        			tmp = CapWords(keywords[i]);
+	        			keywords[i] = tmp;
+	        		}
+	        	}
+	            line = bufRead.readLine();
+	        }
+	        
+	        bufRead.close();
+		}catch(IOException e){
+			e.printStackTrace();
+		}
+		return keywords;
+	}
 }
