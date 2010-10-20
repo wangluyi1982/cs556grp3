@@ -39,7 +39,7 @@ public class OntologyHandler extends OntologyTree {
 	public void Initialize(String root){
 		try{
 			stat.executeUpdate("create table Ontology (ID INTEGER PRIMARY KEY AUTOINCREMENT, Title VARCHAR(500) UNIQUE)");
-			stat.executeUpdate("create table Relationships (Parent VARCHAR(500), Child VARCHAR(500), PRIMARY KEY (Parent, Child))");
+			stat.executeUpdate("create table Relationships (Parent INTEGER, Child INTEGER, PRIMARY KEY (Parent, Child))");
 			stat.execute("INSERT INTO Ontology(title) VALUES ('" + root + "')");
 			System.out.println("Created tables: Ontology, Relationships. Database is ready!");
 		}catch(Exception e){
