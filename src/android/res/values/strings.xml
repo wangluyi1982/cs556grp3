@@ -16,23 +16,23 @@
 
 <resources>
     <string name="menu_delete">Delete</string>
-    <string name="menu_insert">Add note</string>
+    <string name="menu_insert">Add Node</string>
     <string name="menu_revert">Revert</string>
     <string name="menu_discard">Discard</string>
 
-    <string name="resolve_edit">Edit note</string>
-    <string name="resolve_title">Edit title</string>  
+    <string name="resolve_edit">Relations</string>
+    <string name="resolve_title">Edit Node</string>  
 
-    <string name="title_create">Create note</string>
-    <string name="title_edit">Edit note</string>
-	<string name="title_notes_list">Note pad</string>   
-	<string name="title_note">Note</string>  
-	<string name="title_edit_title">Note title:</string>  
+    <string name="title_create">Create Node</string>
+    <string name="title_edit">Relations</string>
+	<string name="title_notes_list">Ontology Editor</string>   
+	<string name="title_note">Node</string>  
+	<string name="title_edit_title">Node Name:</string>  
 	
-	<string name="app_name">Note Pad</string>  
+	<string name="app_name">Grp3 Ontology Editor</string>  
 	
 	<string name="button_ok">OK</string>  
 	
 	<string name="error_title">Error</string>
-	<string name="error_message">Error loading note</string>
+	<string name="error_message">Error loading Node</string>
 </resources>

@@ -23,7 +23,7 @@ import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.UriMatcher;
-import android.content.res.Resources;
+//import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
@@ -45,7 +45,9 @@ public class NotePadProvider extends ContentProvider {
 
     private static final String DATABASE_NAME = "note_pad.db";
     private static final int DATABASE_VERSION = 2;
-    private static final String NOTES_TABLE_NAME = "notes";
+    private static final String NOTES_TABLE_NAME = "Ontology";
+    private static final String NOTES_RELATIONSHIPS = "Relationships";
+    	
 
     private static HashMap<String, String> sNotesProjectionMap;
 
@@ -64,14 +66,18 @@ public class NotePadProvider extends ContentProvider {
         }
 
         @Override
+        /*
+         * Create 2 tables: Ontology and Relationships
+         */
         public void onCreate(SQLiteDatabase db) {
             db.execSQL("CREATE TABLE " + NOTES_TABLE_NAME + " ("
-                    + Notes._ID + " INTEGER PRIMARY KEY,"
-                    + Notes.TITLE + " TEXT,"
-                    + Notes.NOTE + " TEXT,"
-                    + Notes.CREATED_DATE + " INTEGER,"
-                    + Notes.MODIFIED_DATE + " INTEGER"
-                    + ");");
+                    + Notes._ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + Notes.TITLE + " TEXT UNIQUE);");
+            
+            db.execSQL("CREATE TABLE " + NOTES_RELATIONSHIPS + " ("
+            		+ Notes.PARENT + " INTEGER,"
+            		+ Notes.CHILD + " INTEGER,"
+            		+ " PRIMARY KEY(PARENT, CHILD));");
         }
 
         @Override
@@ -122,7 +128,7 @@ public class NotePadProvider extends ContentProvider {
 
         // Get the database and run the query
         SQLiteDatabase db = mOpenHelper.getReadableDatabase();
-        Cursor c = qb.query(db, projection, selection, selectionArgs, null, null, orderBy);
+        Cursor c = qb.query(db, projection, selection, selectionArgs, null, null, null);
 
         // Tell the cursor what uri to watch, so it knows when its source data changes
         c.setNotificationUri(getContext().getContentResolver(), uri);
@@ -157,30 +163,46 @@ public class NotePadProvider extends ContentProvider {
             values = new ContentValues();
         }
 
-        Long now = Long.valueOf(System.currentTimeMillis());
-
-        // Make sure that the fields are all set
-        if (values.containsKey(NotePad.Notes.CREATED_DATE) == false) {
-            values.put(NotePad.Notes.CREATED_DATE, now);
-        }
-
-        if (values.containsKey(NotePad.Notes.MODIFIED_DATE) == false) {
-            values.put(NotePad.Notes.MODIFIED_DATE, now);
-        }
-
+        
+        // initially, values should have TITLE and PARENT as strings
+        
         if (values.containsKey(NotePad.Notes.TITLE) == false) {
-            Resources r = Resources.getSystem();
-            values.put(NotePad.Notes.TITLE, r.getString(android.R.string.untitled));
+        	values.put(NotePad.Notes.TITLE, "new node");
+        	// title is required!
+        	//throw new SQLException("Failed to insert row into " + uri);
         }
-
-        if (values.containsKey(NotePad.Notes.NOTE) == false) {
-            values.put(NotePad.Notes.NOTE, "");
-        }
-
+        
         SQLiteDatabase db = mOpenHelper.getWritableDatabase();
-        long rowId = db.insert(NOTES_TABLE_NAME, Notes.NOTE, values);
-        if (rowId > 0) {
-            Uri noteUri = ContentUris.withAppendedId(NotePad.Notes.CONTENT_URI, rowId);
+        
+        // no parent has been set, so no relationship required, just insert title into Ontology
+        // note: if relationship is required, PARENT_TITLE has to be set in initialValues
+        
+        long cid = 0;
+        
+        if (values.containsKey(NotePad.Notes.TITLE) == false){
+        	values.put(NotePad.Notes.TITLE, "new node");
+        	//throw new SQLException("Failed to insert row into " + uri);
+        }else{
+        	cid = db.insert(NOTES_TABLE_NAME, Notes.NOTE, values);
+        	if (cid == 0){  // node already exists      	
+            	Cursor cursor = db.query(NOTES_TABLE_NAME, new String[] {"_ID"}, 
+                    "title = '" + NotePad.Notes.TITLE + "'", null, null, null, null);
+            	cid = cursor.getInt(1);
+            }
+        }
+        
+        if (values.containsKey("PARENT_TITLE") && cid > 0){
+        	// PARENT_TITLE has been set so get the parent ID
+        	Cursor c = db.query(NOTES_TABLE_NAME, new String[]{"_ID"},
+	        		"title = '" + NotePad.Notes.PARENT + "'", null, null, null, null);
+	        long pid = c.getInt(1);
+	        values.put(NotePad.Notes.PARENT, pid);
+	        values.put(NotePad.Notes.CHILD, cid);
+	        db.insert(NOTES_RELATIONSHIPS, Notes.NOTE, values);
+        }
+       
+        if (cid > 0) {
+            Uri noteUri = ContentUris.withAppendedId(NotePad.Notes.CONTENT_URI, cid);
             getContext().getContentResolver().notifyChange(noteUri, null);
             return noteUri;
         }
@@ -189,7 +211,7 @@ public class NotePadProvider extends ContentProvider {
     }
 
     @Override
-    public int delete(Uri uri, String where, String[] whereArgs) {
+	public int delete(Uri uri, String where, String[] whereArgs) {
         SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         int count;
         switch (sUriMatcher.match(uri)) {
@@ -199,8 +221,8 @@ public class NotePadProvider extends ContentProvider {
 
         case NOTE_ID:
             String noteId = uri.getPathSegments().get(1);
-            count = db.delete(NOTES_TABLE_NAME, Notes._ID + "=" + noteId
-                    + (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+            count = db.delete(NOTES_TABLE_NAME, Notes._ID + "=" + noteId, null);
+            db.delete(NOTES_RELATIONSHIPS, "Parent = " + noteId + " OR Child = " + noteId, null);
             break;
 
         default:
@@ -210,10 +232,12 @@ public class NotePadProvider extends ContentProvider {
         getContext().getContentResolver().notifyChange(uri, null);
         return count;
     }
-
+    
     @Override
     public int update(Uri uri, ContentValues values, String where, String[] whereArgs) {
         SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+        values.remove("modified");
+        values.remove("note");
         int count;
         switch (sUriMatcher.match(uri)) {
         case NOTES:
@@ -222,8 +246,7 @@ public class NotePadProvider extends ContentProvider {
 
         case NOTE_ID:
             String noteId = uri.getPathSegments().get(1);
-            count = db.update(NOTES_TABLE_NAME, values, Notes._ID + "=" + noteId
-                    + (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+            count = db.update(NOTES_TABLE_NAME, values, Notes._ID + "=" + noteId, null);
             break;
 
         default:
@@ -246,4 +269,5 @@ public class NotePadProvider extends ContentProvider {
         sNotesProjectionMap.put(Notes.CREATED_DATE, Notes.CREATED_DATE);
         sNotesProjectionMap.put(Notes.MODIFIED_DATE, Notes.MODIFIED_DATE);
     }
+
 }

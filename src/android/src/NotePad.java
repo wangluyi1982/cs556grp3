@@ -78,5 +78,9 @@ public final class NotePad {
          * <P>Type: INTEGER (long from System.curentTimeMillis())</P>
          */
         public static final String MODIFIED_DATE = "modified";
+
+		public static final String PARENT = "parent";
+		
+		public static final String CHILD = "child";
     }
 }
