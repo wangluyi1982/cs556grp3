@@ -48,7 +48,7 @@ public class NoteEditor extends Activity {
      */
     private static final String[] PROJECTION = new String[] {
             Notes._ID, // 0
-            Notes.NOTE, // 1
+            Notes.TITLE, // 1
     };
     /** The index of the note column */
     private static final int COLUMN_INDEX_NOTE = 1;
