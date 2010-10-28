@@ -16,6 +16,9 @@
 
 package com.example.android.notepad;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+
 import com.example.android.notepad.NotePad.Notes;
 
 import android.app.Activity;
@@ -182,6 +185,15 @@ public class NoteEditor extends Activity {
             // but leave the user where they were (retain the cursor position
             // etc).  This version of setText does that for us.
             String note = mCursor.getString(COLUMN_INDEX_NOTE);
+            NotePadProvider np = new NotePadProvider();
+            
+            // got the selected node, print children
+            ArrayList<String> Children = np.getChildren(note);
+            Iterator<String> x = Children.iterator();
+            System.out.println("Children of " + note);
+            while(x.hasNext()){
+            	System.out.println(x.next());
+            }
             mText.setTextKeepState(note);
             
             // If we hadn't previously retrieved the original text, do so
