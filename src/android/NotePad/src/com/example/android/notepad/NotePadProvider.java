@@ -30,9 +30,10 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
-import android.text.TextUtils;
+//import android.text.TextUtils;
 import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
@@ -119,12 +120,13 @@ public class NotePadProvider extends ContentProvider {
         }
 
         // If no sort order is specified use the default
+        /*
         String orderBy;
         if (TextUtils.isEmpty(sortOrder)) {
             orderBy = NotePad.Notes.DEFAULT_SORT_ORDER;
         } else {
             orderBy = sortOrder;
-        }
+        }*/
 
         // Get the database and run the query
         SQLiteDatabase db = mOpenHelper.getReadableDatabase();
@@ -180,26 +182,10 @@ public class NotePadProvider extends ContentProvider {
         long cid = 0;
         
         if (values.containsKey(NotePad.Notes.TITLE) == false){
-        	values.put(NotePad.Notes.TITLE, "new node");
-        	//throw new SQLException("Failed to insert row into " + uri);
-        }else{
-        	cid = db.insert(NOTES_TABLE_NAME, Notes.NOTE, values);
-        	if (cid == 0){  // node already exists      	
-            	Cursor cursor = db.query(NOTES_TABLE_NAME, new String[] {"_ID"}, 
-                    "title = '" + NotePad.Notes.TITLE + "'", null, null, null, null);
-            	cid = cursor.getInt(1);
-            }
+        	values.put(NotePad.Notes.TITLE, "<parent>,<child>");
         }
-        
-        if (values.containsKey("PARENT_TITLE") && cid > 0){
-        	// PARENT_TITLE has been set so get the parent ID
-        	Cursor c = db.query(NOTES_TABLE_NAME, new String[]{"_ID"},
-	        		"title = '" + NotePad.Notes.PARENT + "'", null, null, null, null);
-	        long pid = c.getInt(1);
-	        values.put(NotePad.Notes.PARENT, pid);
-	        values.put(NotePad.Notes.CHILD, cid);
-	        db.insert(NOTES_RELATIONSHIPS, Notes.NOTE, values);
-        }
+        cid = db.insert(NOTES_TABLE_NAME, Notes.NOTE, values);
+       
        
         if (cid > 0) {
             Uri noteUri = ContentUris.withAppendedId(NotePad.Notes.CONTENT_URI, cid);
@@ -209,6 +195,77 @@ public class NotePadProvider extends ContentProvider {
 
         throw new SQLException("Failed to insert row into " + uri);
     }
+    
+    public ArrayList<String> getSiblings(String node){
+    	// return the an ArrayList containing the siblings of a given node
+    	// first find parent of the node
+    	// after parent is found, find children of that parent
+    	//mOpenHelper = new DatabaseHelper(getContext());
+    	SQLiteDatabase db = mOpenHelper.getReadableDatabase();
+    	ArrayList<String> Siblings = new ArrayList<String>(); // arraylist to store sibling titles
+    	
+    	long cid, pid;
+    	
+    	// get node id
+    	Cursor c, x;
+    	c = db.query(NOTES_TABLE_NAME, new String[] {"_ID"}, " title = '" + node + "'", null, null, null, null);
+    	cid = c.getInt(1);
+    	
+    	// get parent id
+    	c = db.query(NOTES_RELATIONSHIPS, new String[]{"PARENT"}, " CHILD = " + cid, null, null, null, null);
+    	pid = c.getInt(1);
+    	
+    	// get parent's children
+    	c = db.query(NOTES_RELATIONSHIPS, new String[]{"CHILD"}, " PARENT = " + pid, null, null, null, null);
+    	
+    	
+    	// iterate through the cursor and store the sibling ids in the arraylist
+    	int id;
+    	c.moveToFirst();
+    	while (c.isAfterLast() == false){
+    		id = c.getInt(1);
+    		// get title for id
+    		x = db.query(NOTES_TABLE_NAME, new String[]{"title"}, " _ID = " + id, null, null, null, null);
+    		if (x.getCount() != 0){
+    			Siblings.add(x.getString(1));
+    		}
+    		c.moveToNext();
+    	}
+    	return Siblings;
+    }
+    
+    public ArrayList<String> getChildren(String node){
+    	// return the children of a node as an array
+    	//mOpenHelper = new DatabaseHelper(getContext());
+    	SQLiteDatabase db = mOpenHelper.getReadableDatabase();
+    	ArrayList<String> Children = new ArrayList<String>();
+    
+    	// get node id
+    	long cid;
+    	Cursor c, x;
+    	c = db.query(NOTES_TABLE_NAME, new String[] {"_id"}, " title = '" + node + "'", null, null, null, null);
+    	cid = c.getInt(1);
+    	
+    	// get children of the node in the relationships table
+    	c = db.query(NOTES_RELATIONSHIPS, new String[] {"CHILD"}, " Parent = " + cid, null, null, null, null);
+    	
+    	// store children ids
+    	int id;
+    	if (c.getCount() != 0){
+    		c.moveToFirst();
+    		while(c.isAfterLast() == false){
+    			id = c.getInt(1);
+    			// get id's title
+    			x = db.query(NOTES_TABLE_NAME, new String[]{"title"}, "_ID = " + id, null, null, null, null);
+    			if (x.getCount() != 0){
+    				Children.add(x.getString(1));
+    			}
+    			c.moveToNext();
+    		}
+    	}
+    	return Children;
+    }
+    
 
     @Override
 	public int delete(Uri uri, String where, String[] whereArgs) {
@@ -246,7 +303,30 @@ public class NotePadProvider extends ContentProvider {
 
         case NOTE_ID:
             String noteId = uri.getPathSegments().get(1);
-            count = db.update(NOTES_TABLE_NAME, values, Notes._ID + "=" + noteId, null);
+            String nodename = (String) values.get("title");
+            long parent_id, child_id;
+            if (nodename.indexOf(",") > 0){
+            	String parent_child[] = nodename.split(",");
+            	//update with parent
+            	values.clear();
+            	values.put("TITLE", parent_child[0]);
+            	count = db.update(NOTES_TABLE_NAME, values, Notes._ID + "=" + noteId, null);
+            	parent_id = Integer.parseInt(noteId);
+            	values.clear();
+            	values.put("TITLE", parent_child[1]);
+            	child_id = db.insert(NOTES_TABLE_NAME, null, values);
+            	
+            	//insert into relationships table
+            	if (child_id > 0){
+	            	values.clear();
+	            	values.put("PARENT", parent_id);
+	            	values.put("CHILD", child_id);
+	            	db.insert(NOTES_RELATIONSHIPS, null, values);
+            	}
+            }else{
+            	// no parent child so simply insert the node
+            	count = db.update(NOTES_TABLE_NAME, values, Notes._ID + "=" + noteId, null);
+            }
             break;
 
         default:
