@@ -67,16 +67,22 @@ public class NotesList extends ListActivity {
         // If no data was given in the intent (because we were started
         // as a MAIN activity), then use our default content provider.
         Intent intent = getIntent();
-        if (intent.getData() == null) {
+        String SELECTION = null;
+        if (intent.getData() == null) { // should be getData()
             intent.setData(Notes.CONTENT_URI);
+            Bundle res = intent.getExtras();
+            if (res != null){
+            	SELECTION = "_id = (SELECT child FROM Relationships WHERE parent = " + res.getLong("id") + ")";
+            }
         }
-
+        
+      
         // Inform the list we provide context menus for items
         getListView().setOnCreateContextMenuListener(this);
         
         // Perform a managed query. The Activity will handle closing and requerying the cursor
         // when needed.
-        Cursor cursor = managedQuery(getIntent().getData(), PROJECTION, null, null,
+        Cursor cursor = managedQuery(getIntent().getData(), PROJECTION, SELECTION, null,
                 Notes.DEFAULT_SORT_ORDER);
 
         // Used to map notes entries from the database to views
@@ -209,7 +215,12 @@ public class NotesList extends ListActivity {
             setResult(RESULT_OK, new Intent().setData(uri));
         } else {
             // Launch activity to view/edit the currently selected item
-            startActivity(new Intent(Intent.ACTION_EDIT, uri));
+        	Intent myIntent = new Intent();
+        	Bundle bundle = new Bundle();
+        	bundle.putLong("id", id);
+        	myIntent.putExtras(bundle);
+        	myIntent.setClass(NotesList.this, NotesList.class);
+        	startActivity(myIntent);
         }
     }
 }
